@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*
 
 import sys
+import xlrd
 import logging
 import argparse
 import getpass
-import json
+import json 
 import time
-import xlrd
 
+from xlwt import Workbook
+from xlutils.copy import copy
 from ftntlib import FortiManagerJSON
 from device import Device
 
@@ -23,7 +25,7 @@ def readvalue(excel_path, device_list):
   nom_des_feuilles = classeur.sheet_names()
   # Récupération de la première feuille
   feuille = classeur.sheet_by_name(nom_des_feuilles[0])
-  print("> Lecture des devices à importer...")
+  print(u"> Lecture des devices à importer...")
   try:
     for i in range(feuille.nrows)[1:]:
       device_list.append(Device())
@@ -55,6 +57,8 @@ def readvalue(excel_path, device_list):
       device_list[i-1].vdom = feuille.cell_value(i, 25)
       device_list[i-1].fgt_name = feuille.cell_value(i, 26)
       device_list[i-1].cli_script = feuille.cell_value(i, 27)
+      device_list[i-1].sdbranch = feuille.cell_value(i, 28)
+      device_list[i-1].platform = feuille.cell_value(i, 29)
       #print(device_list[i-1].print())
   except IndexError:
     print("Error: excel file missing column")
@@ -72,7 +76,7 @@ def add_model_device(api, device):
       print(">> {} already exist".format(device.name))
       return
 
-  print(">> Add Device Model for : " + device.name)
+  print(u">> Add Device Model for : " + device.name)
   url = 'dvm/cmd/add/device' 
 
   json_device={}
@@ -84,10 +88,14 @@ def add_model_device(api, device):
   json_device['branch_pt'] = "1005"
   json_device['name'] = device.name
   json_device['sn'] = device.sn
+  json_device['desc'] = "FortiGate du site de " + device.name
   json_device['latitude'] = str(device.latitude)
   json_device['longitude'] = str(device.longitude)
 
   meta_fields = {}
+  meta_fields['Company/Organization'] = device.company
+  meta_fields['Contact Phone Number'] = "0680441134"
+  meta_fields['Address'] = device.city
   meta_fields['Contact Email'] = device.contact
   meta_fields['Country'] = device.country
   meta_fields['City'] = device.city
@@ -155,8 +163,8 @@ def main():
   api.verbose('off')
   api.debug('off')
   readvalue(args.file, device_list)
-  print("> Il y a " + str(len(device_list)) + " devices à importer...")
-  print("> Debut de l'import...")
+  print(u"> Il y a " + str(len(device_list)) + " devices à importer...")
+  print(u"> Debut de l'import...")
   for device in device_list:
     if device.type == "FGT":
       if add_model_device(api, device):
@@ -167,7 +175,9 @@ def main():
         device.assign_device_group(api)
         device.assign_system_template(api)
         device.interface_mapping(api)
-        device.address_mapping(api)
+        device.address_mapping(api,"NET-LAN")
+        if device.sdbranch == "yes":
+          device.address_mapping(api,"NET-CORP")
         device.install_config(api)
         time.sleep(5)
         device.assign_sdwan_template(api)
@@ -189,6 +199,4 @@ def main():
   api.logout()
 
 if __name__ == "__main__":
-  main()
-
-print("toto")
+    main()

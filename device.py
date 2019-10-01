@@ -32,6 +32,8 @@ class Device:
         self.vdom = ""
         self.fgt_name = ""
         self.cli_script = ""
+        self.sdbranch = ""
+        self.platform = ""
 
     def print(self):
         print("type: " + self.type + "\nsn : " + self.sn + "\nname : " + self.name + "\nenforce_firmware : " + self.enforce_firmware + "\ntarget_firmware : " + self.target_firmware + "\npolicy_package : "
@@ -321,14 +323,19 @@ class Device:
         url = "/pm/config/adom/{}/obj/dynamic/interface/Z_LAN".format(self.adom)
         #On récupère l'objet Z_LAN
         status, response = api.get(url)
-        #self.print_response(status, response)
+        self.print_response(status, response)
         # si la réponse de la requete échoue, l'objet n'existe PROBABLEMENT pas (cf autre erreur ?)
         if status['code'] != 0:
             self.print_error("Object Z_LAN doesn't exist")
                 
         new_dynamic_mapping={}
         new_dynamic_mapping['_scope'] = self.scope()
-        new_dynamic_mapping['local-intf'] = "LAN"
+        if self.sdbranch == "yes":
+            new_dynamic_mapping['local-intf'] = "LAN"
+        if self.platform == "fgt-60e":
+            new_dynamic_mapping['local-intf'] = "internal"
+        else:
+            new_dynamic_mapping['local-intf'] = "lan"  
         response['dynamic_mapping'].append(new_dynamic_mapping)
         data = {
             'dynamic_mapping' : response['dynamic_mapping'],           
@@ -340,16 +347,19 @@ class Device:
             self.print_error("Unable to do per device mapping to device {}".format(self.name))
         return
     
-    def address_mapping(self, api):
+    def address_mapping(self, api, address):
         print("\n>>> Config LAN address mapping pour {}".format(self.name))
-        url = "/pm/config/adom/{}/obj/firewall/address/NET-LAN".format(self.adom)
+        url = "/pm/config/adom/{}/obj/firewall/address/{}".format(self.adom, address)
         #On récupère l'objet NET-LAN
         status, response = api.get(url)
         #self.print_response(status, response)
         # si la réponse de la requete échoue, l'objet n'existe PROBABLEMENT pas (cf autre erreur ?)
         if status['code'] != 0:
-            self.print_error("Object NET-LAN doesn't exist")
-        subnet = "172.16." + str(self.id_site) + ".0/24"
+            self.print_error("Object {} doesn't exist".format(address))
+        if address == "NET-LAN":
+            subnet = "172.16." + str(self.id_site) + ".0/24"
+        else:
+            subnet = "172.16.1" + str(self.id_site) + ".0/24"
         new_dynamic_mapping={}
         new_dynamic_mapping['_scope'] = self.scope()
         new_dynamic_mapping['subnet'] = subnet
@@ -364,7 +374,7 @@ class Device:
         status, response = api._do('set',url, data)
         #print(str(status) + "\n" + json.dumps(response, indent=2))
         if status['code'] != 0:
-            self.print_error("Unable to do per device mapping to NET-lAN for device {}".format(self.name))
+            self.print_error("Unable to do per device mapping to {} for device {}".format(address, self.name))
         return
     
     def link_device(self, api):
