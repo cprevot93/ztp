@@ -1,0 +1,6 @@
+{
+  "title": "ZTP deployment",
+  "script": "ztp-read-csv.py",
+  "env": "python",
+  "menu_title": "ZTP deployment"
+}
