@@ -33,7 +33,6 @@
       "metadata": {
         "description": "CSV file containing all data for ZTP",
         "subtype": "file",
-        "filename": "ztp.xls",
         "required": "True",
         "opt": "-f"
       }
