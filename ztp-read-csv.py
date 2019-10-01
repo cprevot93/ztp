@@ -1,16 +1,14 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*
 
 import sys
-import xlrd
 import logging
 import argparse
 import getpass
-import json 
+import json
 import time
+import xlrd
 
-from xlwt import Workbook
-from xlutils.copy import copy
 from ftntlib import FortiManagerJSON
 from device import Device
 
@@ -25,7 +23,7 @@ def readvalue(excel_path, device_list):
   nom_des_feuilles = classeur.sheet_names()
   # Récupération de la première feuille
   feuille = classeur.sheet_by_name(nom_des_feuilles[0])
-  print(u"> Lecture des devices à importer...")
+  print("> Lecture des devices à importer...")
   try:
     for i in range(feuille.nrows)[1:]:
       device_list.append(Device())
@@ -74,7 +72,7 @@ def add_model_device(api, device):
       print(">> {} already exist".format(device.name))
       return
 
-  print(u">> Add Device Model for : " + device.name)
+  print(">> Add Device Model for : " + device.name)
   url = 'dvm/cmd/add/device' 
 
   json_device={}
@@ -157,8 +155,8 @@ def main():
   api.verbose('off')
   api.debug('off')
   readvalue(args.file, device_list)
-  print(u"> Il y a " + str(len(device_list)) + " devices à importer...")
-  print(u"> Debut de l'import...")
+  print("> Il y a " + str(len(device_list)) + " devices à importer...")
+  print("> Debut de l'import...")
   for device in device_list:
     if device.type == "FGT":
       if add_model_device(api, device):
@@ -191,4 +189,6 @@ def main():
   api.logout()
 
 if __name__ == "__main__":
-    main()
+  main()
+
+print("toto")
