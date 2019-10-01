@@ -1,0 +1,1 @@
+from .fmg_jsonapi import FortiManagerJSON
