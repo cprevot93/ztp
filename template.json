@@ -6,7 +6,8 @@
       "metadata": {
         "description": "Select product.",
         "required": "True",
-        "subtype": "ip"
+        "subtype": "ip",
+        "opt": "-i"
       }
     },
     "Username": {
@@ -14,7 +15,8 @@
       "defaultValue": "admin",
       "metadata": {
         "description": "Admin username",
-        "required": "True"
+        "required": "True",
+        "opt": "-u"
       }
     },
     "Password": {
@@ -22,7 +24,8 @@
       "metadata": {
         "description": "FortiManager admin password",
         "required": "True",
-        "subtype": "password"
+        "subtype": "password",
+        "opt": "-p"
       }
     },
     "CSVFile": {
@@ -30,7 +33,9 @@
       "metadata": {
         "description": "CSV file containing all data for ZTP",
         "subtype": "file",
-        "required": "True"
+        "filename": "ztp.xls",
+        "required": "True",
+        "opt": "-f"
       }
     }
   }
