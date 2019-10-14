@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*
 ###################################################################
 #
 # faz_jsonapi.py by Jean-Pierre Forcioli
