@@ -25,7 +25,7 @@ def readvalue(excel_path, device_list):
   nom_des_feuilles = classeur.sheet_names()
   # Récupération de la première feuille
   feuille = classeur.sheet_by_name(nom_des_feuilles[0])
-  print(u"> Reading device list...")
+  print("> Reading device list...")
   try:
     for i in range(feuille.nrows)[1:]:
       device_list.append(Device())
@@ -76,7 +76,7 @@ def add_model_device(api, device):
       print(">> {} already exist".format(device.name))
       return
 
-  print(u">> Add Device Model for : " + device.name)
+  print(">> Add Device Model for : " + device.name)
   url = 'dvm/cmd/add/device' 
 
   json_device={}
@@ -164,10 +164,10 @@ def main():
   api.login(args.ip, args.user, args.password)
   api.verbose('off')
   api.debug('off')
-  print(u"\n\n<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fortinet SD-WAN Zero Touch Provisionning Tool <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
+  print("\n\n<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fortinet SD-WAN Zero Touch Provisionning Tool <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
   readvalue(args.file, device_list)
-  print(u"> There is " + str(len(device_list)) + " devices to import...")
-  print(u"> Starting import...\n")
+  print("> There is " + str(len(device_list)) + " devices to import...")
+  print("> Starting import...\n")
   for device in device_list:
     if device.type == "FGT":
       if add_model_device(api, device):
