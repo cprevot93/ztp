@@ -25,7 +25,7 @@ def readvalue(excel_path, device_list):
   nom_des_feuilles = classeur.sheet_names()
   # Récupération de la première feuille
   feuille = classeur.sheet_by_name(nom_des_feuilles[0])
-  print(u"> Lecture des devices à importer...")
+  print(u"> Reading device list...")
   try:
     for i in range(feuille.nrows)[1:]:
       device_list.append(Device())
@@ -89,6 +89,8 @@ def add_model_device(api, device):
   json_device['name'] = device.name
   json_device['sn'] = device.sn
   json_device['desc'] = "FortiGate du site de " + device.name
+  json_device['adm_usr'] = "admin"
+  json_device['adm_pass'] = "fortinet"
   json_device['latitude'] = str(device.latitude)
   json_device['longitude'] = str(device.longitude)
 
@@ -126,13 +128,13 @@ def add_model_device(api, device):
     print("Error: add device fail")
     return False
   
-  ucode, ures = api.update_device(device.adom, device.name)
-  if ucode !=0:
-    return ucode, ures
-  rcode, rres = api.reload_devlist(device.adom, {'name' : device.name}, 'dvm')
-  if rcode !=0:
-    return rcode, rres   
-  return
+  #ucode, ures = api.update_device(device.adom, device.name)
+  #if ucode !=0:
+  #  return ucode, ures
+  #rcode, rres = api.reload_devlist(device.adom, {'name' : device.name}, 'dvm')
+  #if rcode !=0:
+  #  return rcode, rres   
+  return True
 
 ###############################################
 ################### MAIN ######################
@@ -162,9 +164,10 @@ def main():
   api.login(args.ip, args.user, args.password)
   api.verbose('off')
   api.debug('off')
+  print(u"\n\n<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fortinet SD-WAN Zero Touch Provisionning Tool <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
   readvalue(args.file, device_list)
-  print(u"> Il y a " + str(len(device_list)) + " devices à importer...")
-  print(u"> Debut de l'import...")
+  print(u"> There is " + str(len(device_list)) + " devices to import...")
+  print(u"> Starting import...\n")
   for device in device_list:
     if device.type == "FGT":
       if add_model_device(api, device):
@@ -183,6 +186,7 @@ def main():
         device.assign_sdwan_template(api)
         device.install_config(api)
         time.sleep(5)
+        print(u"\n>> Model Device for {} created. Continue with next device\n".format(device.name))
         continue
     if device.type == "FAP":
       device.add_fap_to_fmg(api)

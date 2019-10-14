@@ -212,6 +212,7 @@ class Device:
         print("\n>>> Ajout du profil {} à la FAP {}".format(self.fap_template, self.name))
         url = "/pm/config/adom/{}/obj/wireless-controller/wtp/{}".format(self.adom, self.sn)
         data= {
+          'name': self.name,
           'wtp-profile':  self.fap_template
         }
         scope = [
@@ -323,7 +324,7 @@ class Device:
         url = "/pm/config/adom/{}/obj/dynamic/interface/Z_LAN".format(self.adom)
         #On récupère l'objet Z_LAN
         status, response = api.get(url)
-        self.print_response(status, response)
+        #self.print_response(status, response)
         # si la réponse de la requete échoue, l'objet n'existe PROBABLEMENT pas (cf autre erreur ?)
         if status['code'] != 0:
             self.print_error("Object Z_LAN doesn't exist")
@@ -331,8 +332,8 @@ class Device:
         new_dynamic_mapping={}
         new_dynamic_mapping['_scope'] = self.scope()
         if self.sdbranch == "yes":
-            new_dynamic_mapping['local-intf'] = "LAN"
-        if self.platform == "fgt-60e":
+            new_dynamic_mapping['local-intf'] = ["LAN","CORP"]
+        elif self.platform == "fgt-60e":
             new_dynamic_mapping['local-intf'] = "internal"
         else:
             new_dynamic_mapping['local-intf'] = "lan"  
@@ -348,7 +349,7 @@ class Device:
         return
     
     def address_mapping(self, api, address):
-        print("\n>>> Config LAN address mapping pour {}".format(self.name))
+        print("\n>>> Config {} address mapping pour {}".format(address, self.name))
         url = "/pm/config/adom/{}/obj/firewall/address/{}".format(self.adom, address)
         #On récupère l'objet NET-LAN
         status, response = api.get(url)
