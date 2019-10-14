@@ -143,7 +143,6 @@ def main():
   global logger
   print("\n\n<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fortinet SD-WAN Zero Touch Provisionning Tool <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
 
-
   parser = argparse.ArgumentParser(description='ZTP FMG fortinet')
   parser.add_argument('-f', '--file', help='excel file to import data from', required=True)
   parser.add_argument('-i', '--ip', help='Fortimanager IP', required=True)
@@ -164,9 +163,11 @@ def main():
   device_list = []
   api = FortiManagerJSON()
   api.login(args.ip, args.user, args.password)
+  print("> Logging to Fortimanager at {ip}".format(ip=args.ip))
+  
   api.verbose('off')
   api.debug('off')
-
+  
   readvalue(args.file, device_list)
   print("> There is " + str(len(device_list)) + " devices to import...")
   print("> Starting import...\n")
