@@ -141,6 +141,8 @@ def add_model_device(api, device):
 ###############################################
 def main():
   global logger
+  print("\n\n<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fortinet SD-WAN Zero Touch Provisionning Tool <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
+
 
   parser = argparse.ArgumentParser(description='ZTP FMG fortinet')
   parser.add_argument('-f', '--file', help='excel file to import data from', required=True)
@@ -164,7 +166,7 @@ def main():
   api.login(args.ip, args.user, args.password)
   api.verbose('off')
   api.debug('off')
-  print("\n\n<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fortinet SD-WAN Zero Touch Provisionning Tool <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
+
   readvalue(args.file, device_list)
   print("> There is " + str(len(device_list)) + " devices to import...")
   print("> Starting import...\n")
