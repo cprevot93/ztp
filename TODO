@@ -1,0 +1,9 @@
+1) Installation & Configuration des nouveaux boitiers. Les FGT utilisent l'option 240. Installation de la licence pour les VM.
+2) Lire toutes les valeurs de configuration depuis le CSV
+3) Les nouveaux boîtiers arrivent en nouveaux device sur le FMG
+  a) Faire une boucle pour checker l'arrivée de nouveau FGT
+  b) Enregistrer les nouveaux boitiers dans un ADOM défini dans un CSV
+  c) Choisir le master et le slave en amont dans le CSV
+4) Appliquer les scripts sur le master et le slave
+5) Autoriser à nouveau le boitier qui est le cluster (les deux boitiers sont désenregistrer lors de l'étape précedante)
+6) Appliquer les configurations sur le cluster.

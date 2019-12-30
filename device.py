@@ -66,6 +66,78 @@ class Device:
         }
         return scope
 
+    ###############################################
+    ######### Add model device to FMG #############
+    ###############################################
+    def add_model_device(self, api):
+        url = "/dvmdb/adom/{}/device/{}".format(self.adom, self.name)
+        status, response = api.get(url)
+        # print_response(status, response)
+        # si la réponse de la requete échoue, le FortiGate n'existe PROBABLEMENT pas (cf autre erreur ?)
+        if status['code'] == 0:
+            print(">> {} already exist".format(self.name))
+            return
+
+        print(">> Add Device Model for : " + self.name)
+        url = 'dvm/cmd/add/device'
+
+        json_device={}
+        json_device['mgmt_mode'] = "fmg"
+        json_device['device action'] = "add_model"
+        json_device['mr'] = "2"
+        json_device['os_type'] = "fos"
+        json_device['os_ver'] = "6.0"
+        json_device['branch_pt'] = "1005"
+        json_device['name'] = self.name
+        json_device['sn'] = self.sn
+        json_device['desc'] = "FortiGate du site de " + self.name
+        json_device['adm_usr'] = "admin"
+        json_device['adm_pass'] = "fortinet"
+        json_device['latitude'] = str(self.latitude)
+        json_device['longitude'] = str(self.longitude)
+
+        meta_fields = {}
+        meta_fields['Company/Organization'] = self.company
+        meta_fields['Contact Phone Number'] = "0680441134"
+        meta_fields['Address'] = self.city
+        meta_fields['Contact Email'] = self.contact
+        meta_fields['Country'] = self.country
+        meta_fields['City'] = self.city
+        meta_fields['Site_Name'] = self.name
+        meta_fields['ID_SITE'] = str(self.id_site)
+        meta_fields['downstream-wan1'] = str(self.downstream_wan1)
+        meta_fields['downstream-wan2'] = str(self.downstream_wan2)
+        meta_fields['upstream-wan1'] = str(self.upstream_wan1)
+        meta_fields['upstream-wan2'] = str(self.upstream_wan2)
+
+        json_device['meta fields'] = meta_fields
+
+        data = {
+            'adom' : self.adom,
+            'device' : json_device,
+            'flags' : [ 'create_task' , 'nonblocking' ]
+        }
+
+        status, response = api._do('exec', url, data)
+        #print(json.dumps(data, indent=4))
+        #print(json.dumps(response, indent=4))
+        # if response['taskid']:
+        #   status, response = api.taskwait(response['taskid'])
+        # else:
+        #   return status, response
+        #print(str(status) + "\n" + json.dumps(response, indent=2))
+        # if response['line'][0]['err'] != 0:
+            # print("Error: add device fail")
+            # return False
+
+        #ucode, ures = api.update_device(device.adom, device.name)
+        #if ucode !=0:
+        #  return ucode, ures
+        #rcode, rres = api.reload_devlist(device.adom, {'name' : device.name}, 'dvm')
+        #if rcode !=0:
+        #  return rcode, rres
+        return True
+
     def assign_cli_template(self, api):
         print("\n>>> Ajout du template group {} au device {}".format(self.cli_template, self.name))
         # On récupère la liste des templates groups

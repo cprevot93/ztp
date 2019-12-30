@@ -1,0 +1,21 @@
+config system auto-script
+edit fmg_magic
+set interval 0
+set repeat 1
+set script "
+exe ping- rep 5
+exe ping 8.8.8.8
+exe ce un FMG-VMTM19008131
+c sy ha
+set group-i 10
+set group-n HA
+set mod a-p
+set pa L!nkM3S3cur3!
+set hbd port2 0
+set pr 100
+end
+"
+ne
+end
+
+execute auto-script start fmg_magic
