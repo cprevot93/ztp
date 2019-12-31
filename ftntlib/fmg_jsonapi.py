@@ -22,6 +22,7 @@ else:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     requests.packages.urllib3.disable_warnings()
 
+log = logging.getLogger()
 
 class FortiManagerJSON (object):
 
@@ -119,7 +120,7 @@ class FortiManagerJSON (object):
             params[0].update(self._params)
             self._params = False
         datagram = {'id': self._reqid,
-                    'jsonrpc': "1.0",
+                    'jsonrpc': "2.0",
                     'session': self._sid,
                     'method': method,
                     'params': params,
@@ -336,11 +337,9 @@ class FortiManagerJSON (object):
         status, response = self.http_request('exec', params)
         return status, response
 
-    def taskwait(self, taskid):
+    def taskwait(self, taskid, wait=0, interval=10, timeout=120):
         url = 'task/task/' + str(taskid)
-        wait = 0
-        interval = 5
-        timeout = 120
+
         while (wait < timeout):
             status, response = self._do('get', url)
             if status['code'] == 0:
@@ -353,7 +352,6 @@ class FortiManagerJSON (object):
                 return status, response
 
     # Package methods
-
     def package_exist(self, adom, package):
         url = '/pm/pkg/adom/{}/pkg/{}'.format(adom, package)
         status, response = self.get(url)
@@ -378,6 +376,18 @@ class FortiManagerJSON (object):
             return status, response
         else:
             return code, resp
+
+    # Device list
+    def get_dev_list(self, adom):
+        url = "dvmdb/adom/{adom}/device".format(adom=adom)
+        status, device = self.get(url, {'loadsub': 1})
+        if status['code'] != 0:
+            msg = status['message']
+            if status['code'] == -6:
+                msg = "Adom may not exist"
+            raise(msg)
+        if device:
+            return device
 
     # Device methods
     def get_devid(self, devicename):
@@ -535,6 +545,60 @@ class FortiManagerJSON (object):
             'filter': ['mgmt_mode', '==', 0]
         }
         status, response = self.get(url, opts)
+        return status, response
+
+    def register_device (self, adom, device, mgmtmode='fmg'):
+        url = 'dvm/cmd/add/device'
+
+        device['mgmt_mode'] = mgmtmode
+        device['adm_usr'] = 'admin'
+        device['adm_pass'] = ''
+        data = {
+            'adom' : adom,
+            'device' : device,
+            'flags' : ['create_task' , 'nonblocking']
+        }
+        status, response = self._do('exec', url, data)
+        if response['taskid']:
+            status, response = self.taskwait(response['taskid'])
+        else:
+            return status, response
+         
+        ucode,ures = self.update_device(adom,device['name'])
+        if ucode['code'] !=0:
+            return ucode,ures
+
+        rcode,rres = self.reload_devlist(adom,{'name' : device['name']},'dvm')
+        if rcode['code'] !=0:
+            return rcode,rres
+        log.debug("ADD DEVICE OK")
+        return status, response
+
+    def exec_script(self, adom, device_name, vdom, script_name):
+        url = 'dvmdb/script/execute'
+
+        data = {
+            'adom' : adom,
+            'scope' : {
+                "name": device_name,
+                "vdom": vdom
+            },
+            'script' : script_name
+        }
+        status, response = self._do('exec', url, data)
+        # if response['taskid']:
+        #     status, response = self.taskwait(response['taskid'])
+        # else:
+        #     return status, response
+
+        # ucode,ures = self.update_device(adom, device['name'])
+        # if ucode['code'] !=0:
+        #     return ucode,ures
+
+        # rcode,rres = self.reload_devlist(adom,{'name' : device['name']},'dvm')
+        # if rcode['code'] !=0:
+        #     return rcode,rres
+        # log.debug("ADD DEVICE OK")
         return status, response
 
     def promote_device(self, adom, devicename, username, password):

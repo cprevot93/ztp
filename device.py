@@ -5,11 +5,20 @@ import json
 import logging
 from ftntlib import FortiManagerJSON
 
+log = logging.getLogger()
+
 class Device:
     def __init__(self):
         self.type = ""
         self.sn = ""
+        self.model_device = ""
         self.name = ""
+        self.adom = ""
+        self.vdom = ""
+        # cluster id would be -1 for single machine, -2 for a cluster and positive value for a device which needs to be a cluster
+        self.cluster_id = ""
+        self.master = False
+        self.second_member = None # address to second member device object
         self.enforce_firmware = ""
         self.target_firmware = ""
         self.policy_package = ""
@@ -31,8 +40,6 @@ class Device:
         self.vpn_community = ""
         self.fortiswitch_template = ""
         self.fap_template = ""
-        self.adom = ""
-        self.vdom = ""
         self.fgt_name = ""
         self.cli_script = ""
         self.sdbranch = ""

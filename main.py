@@ -7,7 +7,8 @@ import argparse
 import getpass
 import time
 
-from read_csv import load_value, read_sn
+from read_csv import load_value
+from register_device import wait_for_devices
 from ftntlib import FortiManagerJSON
 from device import Device
 
@@ -17,8 +18,8 @@ log_level = logging.DEBUG
 ################### MAIN ######################
 ###############################################
 def main():
-    log = logging.getLogger('ztp')
-    log.setLevel(level=log_level)
+    log = logging.getLogger()
+    logging.basicConfig(stream=sys.stdout, level=log_level)
     log.info("\n\n<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fortinet SD-WAN Zero Touch Provisionning Tool <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n")
 
     parser = argparse.ArgumentParser(description='ZTP FMG fortinet')
@@ -36,27 +37,36 @@ def main():
             log.error(str(error.args))
 
     device_list = []
-    sn_list = []
     api = FortiManagerJSON()
     api.login(args.ip, args.user, args.password)
-    log.info("> Logging to Fortimanager at {ip}".format(ip=args.ip))
+    log.info("Logging to Fortimanager at {ip}".format(ip=args.ip))
 
     api.verbose('off')
-    api.debug('off')
+    api.debug('on')
 
-    # load_value(args.file, device_list)
-    read_sn(args.file, sn_list)
-    log.info("> There is " + str(len(device_list)) + " devices to import...")
-    log.info("> Starting import...\n")
-    # for device in device_list:
-    #     if device.type == "FGT":
-    #         device.add_model_device(api)
+    # read values from CSV
+    load_value(args.file, device_list)
+
+    log.info("Starting import...\n")
+
+    # first loop for model device
+    for device in device_list:
+        success = True # TODO
+        if device.type == "FGT":
+            if device.model_device == "Yes":
+                # device.add_model_device(api)
+                if success:
+                    device_list.remove(device)
     #     if device.type == "FAP":
     #         device.add_fap_to_fmg(api)
     #         continue
     #     if device.type == "FSW":
     #         device.add_fsw_to_fmg(api)
     #         continue
+
+    if len(device_list) > 0:
+        log.debug(len(device_list))
+        wait_for_devices(api, device_list)
 
     api.logout()
 
