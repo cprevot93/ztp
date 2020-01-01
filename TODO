@@ -7,3 +7,5 @@
 4) Appliquer les scripts sur le master et le slave
 5) Autoriser à nouveau le boitier qui est le cluster (les deux boitiers sont désenregistrer lors de l'étape précedante)
 6) Appliquer les configurations sur le cluster.
+
+7) Tester la fiabilité du lancement du script, faire une reprise sur erreur ici
