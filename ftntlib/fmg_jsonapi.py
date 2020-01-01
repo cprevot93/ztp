@@ -378,9 +378,13 @@ class FortiManagerJSON (object):
             return code, resp
 
     # Device list
-    def get_dev_list(self, adom):
+    def get_regis_device(self, adom):
         url = "dvmdb/adom/{adom}/device".format(adom=adom)
-        status, device = self.get(url, {'loadsub': 1})
+        opts = {
+            'loadsub': 0,
+            'filter': ['mgmt_mode', '==', 3]
+        }
+        status, device = self.get(url, opts)
         if status['code'] != 0:
             msg = status['message']
             if status['code'] == -6:
@@ -512,7 +516,7 @@ class FortiManagerJSON (object):
 
     def delete_device(self, adom, devicename):
         url = 'dvm/cmd/del/device'
-        data = {
+        data = {    
             'adom': adom,
             'device': devicename,
             'flags': ['create_task', 'nonblocking']
@@ -547,12 +551,14 @@ class FortiManagerJSON (object):
         status, response = self.get(url, opts)
         return status, response
 
-    def register_device (self, adom, device, mgmtmode='fmg'):
+    def register_device (self, adom, device, device_name=None, mgmtmode='fmg'):
         url = 'dvm/cmd/add/device'
 
         device['mgmt_mode'] = mgmtmode
         device['adm_usr'] = 'admin'
         device['adm_pass'] = ''
+        if device_name:
+            device['name'] = device_name
         data = {
             'adom' : adom,
             'device' : device,
@@ -564,17 +570,17 @@ class FortiManagerJSON (object):
         else:
             return status, response
          
-        ucode,ures = self.update_device(adom,device['name'])
+        ucode,ures = self.update_device(adom, device['name'])
         if ucode['code'] !=0:
             return ucode,ures
 
-        rcode,rres = self.reload_devlist(adom,{'name' : device['name']},'dvm')
+        rcode,rres = self.reload_devlist(adom, {'name' : device['name']}, 'dvm')
         if rcode['code'] !=0:
             return rcode,rres
         log.debug("ADD DEVICE OK")
         return status, response
 
-    def exec_script(self, adom, device_name, vdom, script_name):
+    def exec_script(self, adom, device_name, vdom, script_name, update=False):
         url = 'dvmdb/script/execute'
 
         data = {
@@ -586,19 +592,21 @@ class FortiManagerJSON (object):
             'script' : script_name
         }
         status, response = self._do('exec', url, data)
-        # if response['taskid']:
-        #     status, response = self.taskwait(response['taskid'])
-        # else:
-        #     return status, response
+        if response['task']:
+            status, response = self.taskwait(response['task'])
+        else:
+            return status, response
 
-        # ucode,ures = self.update_device(adom, device['name'])
-        # if ucode['code'] !=0:
-        #     return ucode,ures
+        if update:
+            ucode,ures = self.update_device(adom, device_name)
+            if ucode['code'] != 0:
+                return ucode, ures
 
-        # rcode,rres = self.reload_devlist(adom,{'name' : device['name']},'dvm')
-        # if rcode['code'] !=0:
-        #     return rcode,rres
-        # log.debug("ADD DEVICE OK")
+            rcode,rres = self.reload_devlist(adom, {'name' : device_name}, 'dvm')
+            if rcode['code'] != 0:
+                return rcode, rres
+
+        log.debug("Script {script_name} executed successfully".format(script_name=script_name))
         return status, response
 
     def promote_device(self, adom, devicename, username, password):

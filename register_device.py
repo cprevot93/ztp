@@ -22,7 +22,7 @@ def is_second_member_present(api, device, device_list, unreg_device_list):
 
     # check in registered device
     try:
-        registered_devices = api.get_dev_list(device.adom)
+        registered_devices = api.get_regis_device(device.adom)
         for reg_dev in registered_devices:
             if reg_dev['sn'] != device.second_member.sn:
                 continue
@@ -32,6 +32,23 @@ def is_second_member_present(api, device, device_list, unreg_device_list):
 
     if not second_member_found:
         log.debug("Second member " + device.second_member.sn + " is not up yet.\nPassing to next device")
+
+    return second_member_found
+
+def is_both_member_registered(api, device):
+    second_member_found = False
+    # check in registered device
+    try:
+        registered_devices = api.get_regis_device(device.adom)
+        for reg_dev in registered_devices:
+            if reg_dev['sn'] != device.second_member.sn:
+                continue
+            second_member_found = True
+    except Exception as e:
+        log.error(str(e.args))
+
+    if not second_member_found:
+        log.debug("Second member " + device.second_member.sn + " is not registered yet.")
 
     return second_member_found
 
@@ -72,7 +89,7 @@ def set_template(api, device):
         "latitude": str(devicelocation[0][3]),
         "longitude": str(devicelocation[0][4])
     }
-    status, result = api.update_device_parameters (adom,str(device['name']),param)
+    status, result = api.update_device_parameters (adom, str(device['name']),param)
 
     #Change name by FGT-VMXXXX-City-Desc
     device['name'] = str(device['name']) + "-" + str(devicelocation[0][1]).replace(" ", "") + "-" + str(devicelocation[0][2]).replace(" ", "")
@@ -81,8 +98,15 @@ def set_template(api, device):
     status, result = api.update_device_parameters(adom, str(device['name']), param)
     status, result = api.install_package (adom, package, scope,flags=['install_chg'])
 
+def push_ha_conf(api, device, device_list):
+    script_name = "slave"
+    if device.master:
+        script_name = "master"
+        device.cluster_id = -2
+        device_list.append(device) # add master to the list of expected unregistered fgt
+    status, response = api.exec_script(device.adom, device.name, device.vdom, script_name)
 
-def wait_for_devices(api, device_list):
+def wait_and_registered_new_devices(api, device_list):
     while(True):
         status, unreg_device_list = api.get_unreg_devices()
 
@@ -97,25 +121,36 @@ def wait_for_devices(api, device_list):
                     # check if the device needs to be a cluster
                     if device.cluster_id > -1:
                         if not is_second_member_present(api, device, device_list, unreg_device_list):
-                            continue
+                            # wait for second member
+                            break
 
                     # Promote device to the good adom, using csv info
                     log.debug("Adding new device " + str(device.sn) + " to adom " + str(device.adom))
-                    status, result = api.register_device(device.adom, unreg_device)
-
-                    if device.cluster_id > -1:
-                        # TODO: execute script on master and slave
-                        # TODO: remove slave from liste
-                        # TODO: change cluster_id to -2 for master
-                        pass
-                    else:
-                        # configuration, templates
-                        pass
+                    status, result = api.register_device(device.adom, unreg_device, device.name)
 
                     device_list.remove(device)
+                    if device.cluster_id < 0: # normal device or master configured
+                        # configuration, templates
+                        # set_template()
+                        # remove normal FGT here to stop loop
+                        pass
+                    elif is_both_member_registered(api, device):
+                        # slave or master not configured
+                        # push HA conf with script
+                        if device.master:
+                            # slave first
+                            device = device.second_member
+
+                        time.sleep(10)
+                        push_ha_conf(api, device, device_list)
+                        # TODO: force delete if unregistration don't work
+                        # status, result = api.delete_device(device.adom, device.name)
+                        time.sleep(10)
+                        push_ha_conf(api, device.second_member, device_list)
+
                     break # device found, don't go thought all the device list
             if is_found:
-                break # break second time to update unreg list
+                break # break second time to update unreg device list
             else:
                 log.debug("Device " + str(unreg_device["sn"]) + " not found in excel sheet\nPass")
 

@@ -8,7 +8,7 @@ import getpass
 import time
 
 from read_csv import load_value
-from register_device import wait_for_devices
+from register_device import wait_and_registered_new_devices
 from ftntlib import FortiManagerJSON
 from device import Device
 
@@ -66,7 +66,7 @@ def main():
 
     if len(device_list) > 0:
         log.debug(len(device_list))
-        wait_for_devices(api, device_list)
+        wait_and_registered_new_devices(api, device_list)
 
     api.logout()
 
