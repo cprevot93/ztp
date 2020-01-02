@@ -53,17 +53,16 @@ def main():
     for device in device_list:
         success = True # TODO
         if device.type == "FGT":
-            if device.model_device == "Yes":
-                # device.add_model_device(api)
-                if success:
-                    device_list.remove(device)
-    #     if device.type == "FAP":
-    #         device.add_fap_to_fmg(api)
-    #         continue
-    #     if device.type == "FSW":
-    #         device.add_fsw_to_fmg(api)
-    #         continue
+            success = device.add_model_device(api)
+        elif device.type == "FAP":
+            success = device.add_fap_to_fmg(api)
+        elif device.type == "FSW":
+            success = device.add_fsw_to_fmg(api)
 
+        if device.model_device == "Yes" and success:
+            device_list.remove(device)
+
+    # loop to wait for new unauthorized device
     if len(device_list) > 0:
         log.debug(len(device_list))
         wait_and_registered_new_devices(api, device_list)

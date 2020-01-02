@@ -350,6 +350,12 @@ class FortiManagerJSON (object):
                     wait = wait + interval
             else:
                 return status, response
+        return {'code': -1 , 'message': "Timeout"}, taskid
+
+    def delete_task(self, taskid):
+        url = 'task/task/' + str(taskid)
+        status, response = self.delete(url)
+        return status, response
 
     # Package methods
     def package_exist(self, adom, package):
@@ -514,7 +520,7 @@ class FortiManagerJSON (object):
             return status, response
         return status, response
 
-    def delete_device(self, adom, devicename):
+    def delete_device(self, adom, devicename, wait=True):
         url = 'dvm/cmd/del/device'
         data = {    
             'adom': adom,
@@ -522,10 +528,9 @@ class FortiManagerJSON (object):
             'flags': ['create_task', 'nonblocking']
         }
         status, response = self._do('exec', url, data)
-        if response['taskid']:
+
+        if response['taskid'] and wait:
             status, response = self.taskwait(response['taskid'])
-        else:
-            return status, response
         return status, response
 
     def delete_devlist(self, adom, deviceinfo):
@@ -580,7 +585,7 @@ class FortiManagerJSON (object):
         log.debug("ADD DEVICE OK")
         return status, response
 
-    def exec_script(self, adom, device_name, vdom, script_name, update=False):
+    def exec_script(self, adom, device_name, vdom, script_name, wait=True, timeout=120, update=False):
         url = 'dvmdb/script/execute'
 
         data = {
@@ -592,19 +597,20 @@ class FortiManagerJSON (object):
             'script' : script_name
         }
         status, response = self._do('exec', url, data)
-        if response['task']:
-            status, response = self.taskwait(response['task'])
-        else:
-            return status, response
+        if wait:
+            if response['task']:
+                status, response = self.taskwait(response['task'], timeout=timeout)
+                if status['code'] == -1: # timeout
+                    return status, response
 
-        if update:
-            ucode,ures = self.update_device(adom, device_name)
-            if ucode['code'] != 0:
-                return ucode, ures
+            if update:
+                status, response = self.update_device(adom, device_name)
+                if status['code'] != 0:
+                    return status, response
 
-            rcode,rres = self.reload_devlist(adom, {'name' : device_name}, 'dvm')
-            if rcode['code'] != 0:
-                return rcode, rres
+                status, response = self.reload_devlist(adom, {'name' : device_name}, 'dvm')
+                if status['code'] != 0:
+                    return status, response
 
         log.debug("Script {script_name} executed successfully".format(script_name=script_name))
         return status, response

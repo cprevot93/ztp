@@ -35,6 +35,7 @@ def is_second_member_present(api, device, device_list, unreg_device_list):
 
     return second_member_found
 
+
 def is_both_member_registered(api, device):
     second_member_found = False
     # check in registered device
@@ -53,50 +54,23 @@ def is_both_member_registered(api, device):
     return second_member_found
 
 
-def set_template(api, device):
-    # Assign device to SDWAN Template
-    print("Starting Assign " + str(device['name']) + " to SDWAN Template " + str(sdwan))
-    status, result = api.assign_sdwantemplate (adom, sdwan, scope)
-
-    # Assign device to CLI Template
-    print("Starting Assign " + str(device['name']) + " to CLI Template " + str(clitemplate))
-    status, result = api.assign_clitemplate (adom, clitemplate, scope)
-
-    # Assign device to devicegroup
-    print("Starting Assign " + str(device['name']) + " to Device Group " + str(devicegroup))
-    status, result = api.assign_devicegroup (adom, devicegroup, scope)
-
-    # Install configuration
-    print("Starting Install Package " + str(package) + " to Device  " + str(device['name']))
-    status, result = api.install_package (adom, package, scope,flags=['install_chg'])
-
-    #status, result = api.update_device_parameters (adom,str(d['name']),param)
-
-    # Define device Location
-    print("Starting Define " + str(device['name']) + " parameters ")
-
-    param = {
-        "meta fields":  {
-            "City":  str(devicelocation[0][1]),
-            "Company/Organization":  "Fortinet",
-            "Contact":  "yt@fortidavid.fr",
-            "Country":  str(devicelocation[0][0]),
-            "ID_Site": str(n)
-        },
-        "name" : str(device['name']) + "-" + str(devicelocation[0][1]).replace(" ", "") + "-" + str(devicelocation[0][2]).replace(" ", ""),
-        "location_from": "GUI",
-        "desc": str(devicelocation[0][0]) + " - " + str(devicelocation[0][1]) + " - " + str(devicelocation[0][2]),
-        "latitude": str(devicelocation[0][3]),
-        "longitude": str(devicelocation[0][4])
-    }
-    status, result = api.update_device_parameters (adom, str(device['name']),param)
-
-    #Change name by FGT-VMXXXX-City-Desc
-    device['name'] = str(device['name']) + "-" + str(devicelocation[0][1]).replace(" ", "") + "-" + str(devicelocation[0][2]).replace(" ", "")
-    print ("New Name is : " + str(device['name']))
-
-    status, result = api.update_device_parameters(adom, str(device['name']), param)
-    status, result = api.install_package (adom, package, scope,flags=['install_chg'])
+def push_conf(api, device):
+    if device.cli_template != "":
+        device.assign_cli_template(api)
+    if device.policy_package != "":
+        device.assign_policy_package(api)
+    if device.device_group != "":
+        device.assign_device_group(api)
+    if device.system_template:
+        device.assign_system_template(api)
+    # device.interface_mapping(api)
+    # device.address_mapping(api, "NET-LAN")
+    if device.sdbranch == "yes":
+        device.address_mapping(api, "NET-CORP")
+    device.install_config(api)
+    if device.sd_wan_template != "":
+        device.assign_sdwan_template(api)
+        device.install_config(api)
 
 def push_ha_conf(api, device, device_list):
     script_name = "slave"
@@ -104,7 +78,14 @@ def push_ha_conf(api, device, device_list):
         script_name = "master"
         device.cluster_id = -2
         device_list.append(device) # add master to the list of expected unregistered fgt
-    status, response = api.exec_script(device.adom, device.name, device.vdom, script_name)
+    status, response = api.exec_script(device.adom, device.name, device.vdom, script_name, timeout=60)
+
+    if status['code'] == -1: # timeout
+        log.debug(status['message'])
+        status, response = api.delete_task(response)
+        # if not device.master: # delete only the slave
+        status, response = api.delete_device(device.adom, device.name, wait=False)
+
 
 def wait_and_registered_new_devices(api, device_list):
     while(True):
@@ -130,22 +111,22 @@ def wait_and_registered_new_devices(api, device_list):
 
                     device_list.remove(device)
                     if device.cluster_id < 0: # normal device or master configured
-                        # configuration, templates
-                        # set_template()
-                        # remove normal FGT here to stop loop
-                        pass
+                        # check state cluster
+                        # if device.cluster_id == -2 and unreg_device['ha_mode'] == 0:
+                        #     log.error("Something when wrong with cluster formation")
+                        #     exit(-1)
+                        # push configurations & templates
+                        push_conf(api, device)
                     elif is_both_member_registered(api, device):
                         # slave or master not configured
                         # push HA conf with script
-                        if device.master:
-                            # slave first
+                        if not device.master:
+                            # master first
                             device = device.second_member
 
-                        time.sleep(10)
+                        # time.sleep(10)
                         push_ha_conf(api, device, device_list)
-                        # TODO: force delete if unregistration don't work
-                        # status, result = api.delete_device(device.adom, device.name)
-                        time.sleep(10)
+                        # time.sleep(10)
                         push_ha_conf(api, device.second_member, device_list)
 
                     break # device found, don't go thought all the device list

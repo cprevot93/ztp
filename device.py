@@ -126,16 +126,16 @@ class Device:
         }
 
         status, response = api._do('exec', url, data)
-        #print(json.dumps(data, indent=4))
-        #print(json.dumps(response, indent=4))
-        # if response['taskid']:
-        #   status, response = api.taskwait(response['taskid'])
-        # else:
-        #   return status, response
-        #print(str(status) + "\n" + json.dumps(response, indent=2))
-        # if response['line'][0]['err'] != 0:
-            # print("Error: add device fail")
-            # return False
+        if response['taskid']:
+          status, response = api.taskwait(response['taskid'])
+        else:
+          return status, response
+
+        if response['line'][0]['err'] != 0:
+            print("Error: add device fail")
+            return False
+
+        self.link_device(api)
 
         #ucode, ures = api.update_device(device.adom, device.name)
         #if ucode !=0:
@@ -376,31 +376,6 @@ class Device:
                 self.fap_template, self.name))
         return
 
-    def execute_cli_script(self, api):
-        print("\n>>> Execution du CLI Script {} sur le device {}".format(self.cli_script, self.name))
-        #url = "/dvmdb/adom/{}/script/execute".format(self.adom)
-        # On check si le script existe 
-        #status, response = api.get(url)
-        #print_response(status, response)
-        # si la réponse de la requete échoue, le CLI Script n'existe PROBABLEMENT pas (cf autre erreur ?)
-        #if status['code'] != 0:
-        #    self.print_error(
-        #        "CLI Script {} doesn't exist".format(self.cli_script))
-
-        # on ajoute le device dans le scope du group
-        scope_member = [self.scope()]
-        workflow = {
-            'adom' : self.adom,
-            'scope' : scope_member,
-            'script' : self.cli_script             
-        }
-        #print(json.dumps(workflow, indent=4))
-        url = "/dvmdb/adom/{}/script/execute".format(self.adom)
-        status, response = api._do('exec', url, workflow)
-        if status['code'] != 0:
-            self.print_error("unable execute script {} to device {}".format(self.cli_script, self.name))
-        return
-    
     def interface_mapping(self, api):
         print("\n>>> Config interface mapping pour {}".format(self.name))
         url = "/pm/config/adom/{}/obj/dynamic/interface/Z_LAN".format(self.adom)
