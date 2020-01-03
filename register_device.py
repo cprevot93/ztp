@@ -78,7 +78,6 @@ def push_ha_conf(api, fmg_gui, device, device_list):
         script_name = "master"
         device.cluster_id = -2
         device_list.append(device) # add master to the list of expected unregistered fgt
-    status, response = api.exec_script(device.adom, device.name, device.vdom, script_name, timeout=60)
 
     script_id_master = api.get_script_id(script_name)
     fmg_gui.exec_script(script_id_master, device.name)
