@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+#Usage reset.expect <host> <ssh password>
+
+set host [lindex $argv 0]
+set login admin
+set password [lindex $argv 1]
+
+spawn ssh -o StrictHostKeyChecking=no $login@$host
+expect "*New Password:"
+send "$password\r"
+send "$password\r"
+send "config system admin\r"
+send "edit admin\r"
+send "unset password $password\r"
+send "end\r"

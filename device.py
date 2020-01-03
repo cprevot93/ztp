@@ -111,11 +111,7 @@ class Device:
         meta_fields['Country'] = self.country
         meta_fields['City'] = self.city
         meta_fields['Site_Name'] = self.name
-        meta_fields['ID_SITE'] = str(self.id_site)
-        meta_fields['downstream-wan1'] = str(self.downstream_wan1)
-        meta_fields['downstream-wan2'] = str(self.downstream_wan2)
-        meta_fields['upstream-wan1'] = str(self.upstream_wan1)
-        meta_fields['upstream-wan2'] = str(self.upstream_wan2)
+        meta_fields['id_site'] = str(self.id_site)
 
         json_device['meta fields'] = meta_fields
 

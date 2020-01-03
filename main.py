@@ -9,7 +9,7 @@ import time
 
 from read_csv import load_value
 from register_device import wait_and_registered_new_devices
-from ftntlib import FortiManagerJSON
+from ftntlib import FortiManagerJSON, FortiManagerGUI
 from device import Device
 
 log_level = logging.DEBUG
@@ -40,9 +40,11 @@ def main():
     api = FortiManagerJSON()
     api.login(args.ip, args.user, args.password)
     log.info("Logging to Fortimanager at {ip}".format(ip=args.ip))
-
     api.verbose('off')
     api.debug('on')
+
+    fmg_gui = FortiManagerGUI(args.ip)
+    fmg_gui.login(args.user, args.password)
 
     # read values from CSV
     load_value(args.file, device_list)
@@ -52,20 +54,21 @@ def main():
     # first loop for model device
     for device in device_list:
         success = True # TODO
-        if device.type == "FGT":
-            success = device.add_model_device(api)
-        elif device.type == "FAP":
-            success = device.add_fap_to_fmg(api)
-        elif device.type == "FSW":
-            success = device.add_fsw_to_fmg(api)
+        if str(device.model_device).lower() == "yes":
+            if device.type == "FGT":
+                success = device.add_model_device(api)
+            elif device.type == "FAP":
+                success = device.add_fap_to_fmg(api)
+            elif device.type == "FSW":
+                success = device.add_fsw_to_fmg(api)
 
-        if device.model_device == "Yes" and success:
-            device_list.remove(device)
+            if success:
+                device_list.remove(device)
 
     # loop to wait for new unauthorized device
     if len(device_list) > 0:
         log.debug(len(device_list))
-        wait_and_registered_new_devices(api, device_list)
+        wait_and_registered_new_devices(api, fmg_gui, device_list)
 
     api.logout()
 

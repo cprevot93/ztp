@@ -72,7 +72,7 @@ def push_conf(api, device):
         device.assign_sdwan_template(api)
         device.install_config(api)
 
-def push_ha_conf(api, device, device_list):
+def push_ha_conf(api, fmg_gui, device, device_list):
     script_name = "slave"
     if device.master:
         script_name = "master"
@@ -80,14 +80,17 @@ def push_ha_conf(api, device, device_list):
         device_list.append(device) # add master to the list of expected unregistered fgt
     status, response = api.exec_script(device.adom, device.name, device.vdom, script_name, timeout=60)
 
-    if status['code'] == -1: # timeout
-        log.debug(status['message'])
-        status, response = api.delete_task(response)
-        # if not device.master: # delete only the slave
-        status, response = api.delete_device(device.adom, device.name, wait=False)
+    script_id_master = api.get_script_id(script_name)
+    fmg_gui.exec_script(script_id_master, device.name)
+
+    # if status['code'] == -1: # timeout
+    #     log.debug(status['message'])
+    #     status, response = api.delete_task(response)
+    #     # if not device.master: # delete only the slave
+    #     status, response = api.delete_device(device.adom, device.name, wait=False)
 
 
-def wait_and_registered_new_devices(api, device_list):
+def wait_and_registered_new_devices(api, fmg_gui, device_list):
     while(True):
         status, unreg_device_list = api.get_unreg_devices()
 
@@ -124,10 +127,8 @@ def wait_and_registered_new_devices(api, device_list):
                             # master first
                             device = device.second_member
 
-                        # time.sleep(10)
-                        push_ha_conf(api, device, device_list)
-                        # time.sleep(10)
-                        push_ha_conf(api, device.second_member, device_list)
+                        push_ha_conf(api, fmg_gui, device, device_list)
+                        push_ha_conf(api, fmg_gui, device.second_member, device_list)
 
                     break # device found, don't go thought all the device list
             if is_found:

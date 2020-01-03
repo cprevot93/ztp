@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+#Usage reset.expect <host> <ssh password>
+
+set host [lindex $argv 0]
+set login admin
+
+spawn ssh -o StrictHostKeyChecking=no $login@$host
+expect "*# "
+send "execute factoryreset\ry\r"
+interact

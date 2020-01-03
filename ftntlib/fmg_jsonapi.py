@@ -383,6 +383,15 @@ class FortiManagerJSON (object):
         else:
             return code, resp
 
+    def get_script_id(self, script_name):
+        url = 'dvmdb/script'
+        code, script_list = self.get(url)
+        if script_list:
+            for script in script_list:
+                if script['name'] != script_name:
+                    continue
+                return script['oid']
+
     # Device list
     def get_regis_device(self, adom):
         url = "dvmdb/adom/{adom}/device".format(adom=adom)
@@ -616,7 +625,7 @@ class FortiManagerJSON (object):
         return status, response
 
     def promote_device(self, adom, devicename, username, password):
-        c, r = self._do('get', 'dvmdb/device/'+str(devicename),
+        c, r = self._do('get', 'dvmdb/device/' + str(devicename),
                         {'filter': ['mgmt_mode', '==', 0]}
                         )
         if c != 0:

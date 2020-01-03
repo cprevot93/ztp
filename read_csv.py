@@ -28,9 +28,9 @@ def check_data(device_list):
                 device.second_member = second_member
                 second_member.second_member = device
 
-    if not second_member_found:
-        log.error("CSV data check error.\nCouldn't found second member of cluster group id " + str(device.cluster_id) + "\nExiting...")
-        exit(-1)
+            if not second_member_found:
+                log.error("CSV data check error.\nCouldn't found second member of cluster group id " + str(device.cluster_id) + "\nExiting...")
+                exit(-1)
 
 ###############################################
 ############  Read values csv  ################
