@@ -51,6 +51,11 @@ def main():
 
     log.info("Starting import...\n")
 
+    # loop to wait for new unauthorized device
+    if len(device_list) > 0:
+        log.debug(len(device_list))
+        wait_and_registered_new_devices(api, fmg_gui, device_list)
+
     # first loop for model device
     for device in device_list:
         success = True # TODO
@@ -65,10 +70,6 @@ def main():
             if success:
                 device_list.remove(device)
 
-    # loop to wait for new unauthorized device
-    if len(device_list) > 0:
-        log.debug(len(device_list))
-        wait_and_registered_new_devices(api, fmg_gui, device_list)
 
     api.logout()
 
